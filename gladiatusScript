@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus 2 in 1
 // @namespace    pondfillers
-// @version      3.3
+// @version      4.0
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -28,9 +28,11 @@ setInterval(function() {
     var myLoc = location.toString();
     var mySh = myLoc.match(/.+?\&sh\=(.+?)$/);
     mySh = mySh[1];
-    var pageArena = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
+    var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
+    var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
     var pageExpeditii = Boolean(myLoc.match(/loc=6/));
     var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
+    var arenaLoad = document.getElementById("cooldown_bar_fill_arena").style.width;
     var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
     var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
     if (elemStyle == "100%" && lifeStyle > 15) {
@@ -41,8 +43,19 @@ setInterval(function() {
             redirectButton[0].click();
         }
     }
-    if(circusTurmaLoad == "100%") {
+    if(arenaLoad == "100%") {
         if(pageArena == true) {
+            // attack
+            var testing = $(".attack:last").attr("onClick").toString();
+            var returnedArray = testing.match(/startFight\(this\,\s(.+?)\)/);
+            attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], mySh);
+        } else {
+            var clickArena = $("#cooldown_bar_arena>a")[0];
+            clickArena.click();
+        }
+    }
+    if(circusTurmaLoad == "100%") {
+        if(pageCircus == true) {
             // attack
             var testing = $(".attack").attr("onClick").toString();
             var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
