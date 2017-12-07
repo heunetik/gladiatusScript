@@ -28,8 +28,8 @@ setInterval(function() {
     var pageExpeditii = Boolean(myLoc.match(/loc=6/));
     var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
     var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
-    var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width;
-    if (elemStyle == "100%" && lifeStyle >= "15%") {
+    var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
+    if (elemStyle == "100%" && lifeStyle > 15) {
         if(pageExpeditii == true) {
             attack(null, '6', 1, 1, '');
         } else {
