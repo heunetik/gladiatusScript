@@ -1,0 +1,52 @@
+// ==UserScript==
+// @name         Gladiatus 2 in 1
+// @namespace    pondfillers
+// @version      3.0
+// @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
+// @author       heunetik
+// @match        https://*.gladiatus.gameforge.com/*
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js
+// @grant        none
+// ==/UserScript==
+
+(function() {
+'use strict';
+   function attackMethod(method, url, data, shash) {
+       var request = {
+           method: method,
+           url: url,
+           data: data + "&a=" + new Date().getTime() + "&sh=" + shash,
+           onComplete: function(response) {
+               eval(response);
+           }
+       };
+       new Request(request).send();
+   }
+setInterval(function() {
+    var myLoc = location.toString();
+    var pageArena = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
+    var pageExpeditii = Boolean(myLoc.match(/loc=6/));
+    var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
+    var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
+    var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width;
+    if (elemStyle == "100%" && lifeStyle >= "15%") {
+        if(pageExpeditii == true) {
+            attack(null, '6', 1, 1, '');
+        } else {
+            var redirectButton = $('a[href*="&loc=6"]');
+            redirectButton[0].click();
+        }
+    }
+    if(circusTurmaLoad == "100%") {
+        if(pageArena == true) {
+            // attack
+            var testing = $(".attack").attr("onClick").toString();
+            var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
+            attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", "yourSH");
+        } else {
+            var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
+            clickCircusTurma.click();
+        }
+    }
+}, 1000);
+})();
