@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Gladiatus 2 in 1
 // @namespace    pondfillers
-// @version      3.2
+// @version      3.3
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js
+// @updateUrl    https://raw.githubusercontent.com/heunetik/gladiatusScript/master/gladiatusScript
+// @icon         https://i.imgur.com/loWkqOF.jpg
 // @grant        none
 // ==/UserScript==
 
