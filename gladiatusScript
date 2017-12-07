@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus 2 in 1
 // @namespace    pondfillers
-// @version      3.1.1
+// @version      3.2
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -24,6 +24,8 @@
    }
 setInterval(function() {
     var myLoc = location.toString();
+    var mySh = myLoc.match(/.+?\&sh\=(.+?)$/);
+    mySh = mySh[1];
     var pageArena = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
     var pageExpeditii = Boolean(myLoc.match(/loc=6/));
     var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
@@ -42,7 +44,7 @@ setInterval(function() {
             // attack
             var testing = $(".attack").attr("onClick").toString();
             var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
-            attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", "yourSH");
+            attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", mySh);
         } else {
             var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
             clickCircusTurma.click();
