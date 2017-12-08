@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Gladiatus 2 in 1
+// @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      4.0
+// @version      5.2
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -12,58 +12,102 @@
 // ==/UserScript==
 
 (function() {
-'use strict';
-   function attackMethod(method, url, data, shash) {
-       var request = {
-           method: method,
-           url: url,
-           data: data + "&a=" + new Date().getTime() + "&sh=" + shash,
-           onComplete: function(response) {
-               eval(response);
-           }
-       };
-       new Request(request).send();
-   }
-setInterval(function() {
-    var myLoc = location.toString();
-    var mySh = myLoc.match(/.+?\&sh\=(.+?)$/);
-    mySh = mySh[1];
-    var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
-    var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
-    var pageExpeditii = Boolean(myLoc.match(/loc=6/));
-    var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
-    var arenaLoad = document.getElementById("cooldown_bar_fill_arena").style.width;
-    var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
-    var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
-    if (elemStyle == "100%" && lifeStyle > 15) {
-        if(pageExpeditii == true) {
-            attack(null, '6', 1, 1, '');
-        } else {
-            var redirectButton = $('a[href*="&loc=6"]');
-            redirectButton[0].click();
-        }
+    'use strict';
+
+    function attackMethod(method, url, data, shash) {
+        var request = {
+            method: method,
+            url: url,
+            data: data + "&a=" + new Date().getTime() + "&sh=" + shash,
+            onComplete: function(response) {
+                eval(response);
+            }
+        };
+        new Request(request).send();
     }
-    if(arenaLoad == "100%") {
-        if(pageArena == true) {
-            // attack
-            var testing = $(".attack:last").attr("onClick").toString();
-            var returnedArray = testing.match(/startFight\(this\,\s(.+?)\)/);
-            attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], mySh);
-        } else {
-            var clickArena = $("#cooldown_bar_arena>a")[0];
-            clickArena.click();
+    setInterval(function() {
+        //current page data and UID
+        var myLoc = location.toString();
+        var mySh = myLoc.match(/.+?\&sh\=(.+?)$/);
+        mySh = mySh[1];
+        // ------------------
+        //circus
+        var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
+        var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
+        //arena
+        var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
+        var arenaLoad = document.getElementById("cooldown_bar_fill_arena").style.width;
+        //expeditii
+        var pageExpeditii = Boolean(myLoc.match(/loc=1/));
+        var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
+        // dungeon
+        var dungeonLoad = document.getElementById("cooldown_bar_fill_dungeon").style.width;
+        var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=0/));
+        // HP BAR
+        var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
+        if (elemStyle == "100%" && lifeStyle > 15) {
+            if (pageExpeditii == true) {
+                attack(null, '1', 2, 1, '');
+            } else {
+                var redirectButton = $('a[href*="&loc=1"]');
+                redirectButton[0].click();
+            }
         }
-    }
-    if(circusTurmaLoad == "100%") {
-        if(pageCircus == true) {
-            // attack
-            var testing = $(".attack").attr("onClick").toString();
-            var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
-            attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", mySh);
-        } else {
-            var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
-            clickCircusTurma.click();
+        if (dungeonLoad == "100%") {
+            if (pageDungeon == true) {
+                var inDungeon = $("img[src*='9186/img/dungeons/']").length;
+                console.log(inDungeon);
+                if (inDungeon) {
+                    var attackDungeon = $("img[src='9186/img/combatloc.gif']")[0];
+                    attackDungeon.click();
+                } else {
+                    var clickDiff = $("input[value='Normal']")[0];
+                    clickDiff.click();
+                }
+                //var dungId = $("input[name='dungeonId']").val();
+
+            } else {
+                var clickDungeon = $("#cooldown_bar_dungeon>a")[0];
+                clickDungeon.click();
+            }
         }
-    }
-}, 1000);
+        if(arenaLoad == "100%") {
+            if(pageArena == true) {
+                var testing = $(".attack:last").attr("onClick").toString();
+                var returnedArray = testing.match(/startFight\(this\,\s(.+?)\)/);
+                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], mySh);
+            } else {
+                var clickArena = $("#cooldown_bar_arena>a")[0];
+                clickArena.click();
+            }
+        }
+        if(circusTurmaLoad == "100%") {
+            if(pageCircus == true) {
+                var users = document.getElementsByClassName("attack");
+                var seconds = new Date() / 1000;
+                seconds = seconds.toInt().toString();
+                seconds = seconds[seconds.length - 1] / 2;
+                seconds = seconds.toInt();
+                console.log(seconds);
+                users[seconds].click();
+            } else {
+                var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
+                clickCircusTurma.click();
+            }
+        }
+        /*
+        LEGACY VERSION - ATTACKS FIRST USER IN LIST
+        if(circusTurmaLoad == "100%") {
+            if(pageCircus == true) {
+                // attack
+                var testing = $(".attack").attr("onClick").toString();
+                var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
+                attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", mySh);
+            } else {
+                var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
+                clickCircusTurma.click();
+            }
+        }
+        */
+    }, 1000);
 })();
