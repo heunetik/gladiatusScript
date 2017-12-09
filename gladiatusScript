@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      5.2
+// @version      6.1
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -13,7 +13,26 @@
 
 (function() {
     'use strict';
-
+    function addGlobalStyle(css) {
+        var head, style;
+        head = document.getElementsByTagName('head')[0];
+        if (!head) { return; }
+        style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = css.replace(/;/g, ' !important;');
+        head.appendChild(style);
+    }
+    function calcSkill(gold, skillCost) {
+        var skills = [],
+            total = 0;
+        skillCost.forEach(function(cost) {
+            while (total + cost <= gold) {
+                skills.push(cost);
+                total += cost;
+            }
+        });
+        return skills;
+    }
     function attackMethod(method, url, data, shash) {
         var request = {
             method: method,
@@ -25,38 +44,66 @@
         };
         new Request(request).send();
     }
+    //current page data
+    var myLoc = location.toString();
+    var fullLoc = location.origin.toString() + location.pathname.toString();
+    // ------------------
+    //current gold ammount
+    var myGold = $("#sstat_gold_val").text().trim().replace('.','').toInt();
+    //circus
+    var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
+    //arena
+    var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
+    //expeditii
+    var pageExpeditii = Boolean(myLoc.match(/mod=location&loc=/));
+    //dungeon
+    var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=0/));
+    //training
+    var pageTraining = Boolean(myLoc.match(/mod=training/));
+    // --REPEAT--
     setInterval(function() {
-        //current page data and UID
-        var myLoc = location.toString();
-        var mySh = myLoc.match(/.+?\&sh\=(.+?)$/);
-        mySh = mySh[1];
+        if (pageTraining == true) {
+            var trainingCosts = $(".training_costs").map(function() {
+                return $(this).text().trim().replace('.','').toInt();
+            }).get();
+            var upgradePlan = calcSkill(myGold, trainingCosts);
+            if(upgradePlan.length) {
+                upgradePlan.forEach(function (item) {
+                    var selectedUpgrade = trainingCosts.indexOf(item) + 1;
+                    var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
+                    upgradeButton.click();
+                });
+            } else {
+                console.log("u r broke man");
+            }
+        } else {
+            var trainingButton = $("a[href*='mod=training']")[0];
+            trainingButton.click();
+        }
+    }, 3600000);
+    setInterval(function() {
         // ------------------
         //circus
-        var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
         var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
         //arena
-        var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
         var arenaLoad = document.getElementById("cooldown_bar_fill_arena").style.width;
         //expeditii
-        var pageExpeditii = Boolean(myLoc.match(/loc=1/));
         var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
         // dungeon
         var dungeonLoad = document.getElementById("cooldown_bar_fill_dungeon").style.width;
-        var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=0/));
         // HP BAR
         var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
         if (elemStyle == "100%" && lifeStyle > 15) {
             if (pageExpeditii == true) {
-                attack(null, '1', 2, 1, '');
+                attack(null, '2', 2, 1, '');
             } else {
-                var redirectButton = $('a[href*="&loc=1"]');
-                redirectButton[0].click();
+                var redirectButton = $('a[href*="&loc=1"]')[0];
+                redirectButton.click();
             }
         }
         if (dungeonLoad == "100%") {
             if (pageDungeon == true) {
                 var inDungeon = $("img[src*='9186/img/dungeons/']").length;
-                console.log(inDungeon);
                 if (inDungeon) {
                     var attackDungeon = $("img[src='9186/img/combatloc.gif']")[0];
                     attackDungeon.click();
@@ -65,7 +112,6 @@
                     clickDiff.click();
                 }
                 //var dungId = $("input[name='dungeonId']").val();
-
             } else {
                 var clickDungeon = $("#cooldown_bar_dungeon>a")[0];
                 clickDungeon.click();
@@ -75,7 +121,7 @@
             if(pageArena == true) {
                 var testing = $(".attack:last").attr("onClick").toString();
                 var returnedArray = testing.match(/startFight\(this\,\s(.+?)\)/);
-                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], mySh);
+                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], secureHash);
             } else {
                 var clickArena = $("#cooldown_bar_arena>a")[0];
                 clickArena.click();
@@ -102,7 +148,7 @@
                 // attack
                 var testing = $(".attack").attr("onClick").toString();
                 var returnedArray = testing.match(/startProvinciarumFight\(this\,\s3\,\s(.+?)\,\s(.+?)\,\s.+$/);
-                attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", mySh);
+                attackMethod("get", "ajax.php", "mod=arena&submod=doCombat&aType=" + 3 + "&opponentId=" + returnedArray[1] + "&serverId=" + returnedArray[2] + "&country=" + "ro", secureHash);
             } else {
                 var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
                 clickCircusTurma.click();
