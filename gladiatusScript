@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      6.1
+// @version      6.2
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js
 // @updateUrl    https://raw.githubusercontent.com/heunetik/gladiatusScript/master/gladiatusScript
 // @icon         https://i.imgur.com/loWkqOF.jpg
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 
 (function() {
@@ -67,21 +68,41 @@
                 return $(this).text().trim().replace('.','').toInt();
             }).get();
             var upgradePlan = calcSkill(myGold, trainingCosts);
-            if(upgradePlan.length) {
-                upgradePlan.forEach(function (item) {
-                    var selectedUpgrade = trainingCosts.indexOf(item) + 1;
-                    var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
-                    upgradeButton.click();
-                });
-            } else {
-                console.log("u r broke man");
-            }
+            GM_setValue("upgPlan", JSON.stringify(upgradePlan));
+            GM_setValue("upgCost", JSON.stringify(trainingCosts));
         } else {
             var trainingButton = $("a[href*='mod=training']")[0];
             trainingButton.click();
         }
     }, 3600000);
     setInterval(function() {
+        // SKILL ADDING
+        var upgrades = JSON.parse(GM_getValue("upgPlan"));
+        if(upgrades.length) {
+            if (pageTraining == true) {
+                var costs = JSON.parse(GM_getValue("upgCost"));
+                var upgradeToDo = upgrades[0];
+                upgrades.shift();
+                var selectedUpgrade = costs.indexOf(upgradeToDo) + 1;
+                var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
+                if(upgradeButton.length) {
+                    upgradeButton.click();
+                }
+                /* Old approach - Might be useful
+                upgrades.forEach(function (item) {
+                    var selectedUpgrade = costs.indexOf(item) + 1;
+                    upgrades.shift();
+                    var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
+                    upgradeButton.click();
+                });
+                */
+            }  else {
+                var trainingButton = $("a[href*='mod=training']")[0];
+                trainingButton.click();
+            }
+        } else {
+            // console.log("u r broke man");
+        }
         // ------------------
         //circus
         var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
