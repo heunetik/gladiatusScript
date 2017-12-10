@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      6.2
+// @version      8.5
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -14,6 +14,7 @@
 
 (function() {
     'use strict';
+
     function addGlobalStyle(css) {
         var head, style;
         head = document.getElementsByTagName('head')[0];
@@ -23,6 +24,7 @@
         style.innerHTML = css.replace(/;/g, ' !important;');
         head.appendChild(style);
     }
+
     function calcSkill(gold, skillCost) {
         var skills = [],
             total = 0;
@@ -34,6 +36,7 @@
         });
         return skills;
     }
+
     function attackMethod(method, url, data, shash) {
         var request = {
             method: method,
@@ -44,6 +47,187 @@
             }
         };
         new Request(request).send();
+    }
+
+    function dungeonAttack(dungeonLoad, pageDungeon, selfHp)
+    {
+        if (dungeonLoad == "100%" && selfHp > 15) {
+            if (pageDungeon == true) {
+                var inDungeon = $("img[src*='9186/img/dungeons/']").length;
+                if (inDungeon) {
+                    var attackDungeon = $("img[src='9186/img/combatloc.gif']");
+                    if(attackDungeon.length) {
+                        attackDungeon[0].click();
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    var clickDiff = $("input[value='Normal']")[0];
+                    clickDiff.click();
+                }
+                //var dungId = $("input[name='dungeonId']").val();
+            } else {
+                var clickDungeon = $("#cooldown_bar_dungeon>a")[0];
+                clickDungeon.click();
+            }
+        }
+    }
+
+    function expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp)
+    {
+        if (expeditionsLoad == "100%" && selfHp > 15) {
+            if (pageExpeditii == true) {
+                var readyToAttack = $(".expedition_cooldown_reduce");
+                if(readyToAttack.length == 0) {
+                    attack(null, '2', 2, 1, '');
+                }
+            } else {
+                var redirectButton = $('a[href*="&loc=1"]')[0];
+                redirectButton.click();
+            }
+        }
+    }
+
+    function arenaAttack(arenaLoad, pageArena, selfHp)
+    {
+        if(arenaLoad == "100%" && selfHp > 15) {
+            if(pageArena == true) {
+                var pickedEnemy = $(".attack:last").attr("onClick").toString();
+                var returnedArray = pickedEnemy.match(/startFight\(this\,\s(.+?)\)/);
+                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], secureHash);
+            } else {
+                var clickArena = $("#cooldown_bar_arena>a")[0];
+                clickArena.click();
+            }
+        }
+    }
+
+    function ctAttack(circusTurmaLoad, pageCircus, selfHp)
+    {
+        if(circusTurmaLoad == "100%") {
+            if(pageCircus == true) {
+                var users = document.getElementsByClassName("attack");
+                var seconds = new Date() / 1000;
+                seconds = seconds.toInt().toString();
+                seconds = seconds[seconds.length - 1] / 2;
+                seconds = seconds.toInt();
+                console.log(seconds);
+                users[seconds].click();
+            } else {
+                var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
+                clickCircusTurma.click();
+            }
+        }
+    }
+
+    function upgradeSkills(upgrades, pageTraining, myGold)
+    {
+        if(Boolean(upgrades.length)) {
+            if (pageTraining == true) {
+                var costs = JSON.parse(GM_getValue("upgCost"));
+                var upgradeToDo = upgrades[0];
+                upgrades.shift();
+                var selectedUpgrade = costs.indexOf(upgradeToDo) + 1;
+                var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]');
+                if(upgradeButton.length) {
+                    upgradeButton[0].click();
+                    //location.reload();
+                }
+                /* Old approach - Might be useful
+                upgrades.forEach(function (item) {
+                    var selectedUpgrade = costs.indexOf(item) + 1;
+                    upgrades.shift();
+                    var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
+                    upgradeButton.click();
+                });
+                */
+            }  else {
+                var trainingButton = $("a[href*='mod=training']");
+                trainingButton[0].click();
+            }
+        } else {
+            // console.log("u r broke man");
+        }
+    }
+
+    function startEatingIfFoodExists()
+    {
+        var checkExist = setInterval(function() {
+           if ($("div[data-content-type='64']").length) {
+              healMyself(extractFoodData(foodLogic(getFoodList())));
+              clearInterval(checkExist);
+           }
+        }, 300);
+    }
+
+    function getFoodList()
+    {
+        var allFoodItems = $("div[data-content-type='64']");
+
+        var arrayFoodItems = $.map(allFoodItems, function(value, index) {
+            return [value];
+        });
+
+        var healValues = [];
+        arrayFoodItems.forEach(function (item) {
+            var rawElem = $(item).attr("data-tooltip").match(/Vindeca\s(.+?)\sdin.+inteligenta\:\s\+(.+?)\s/);
+            var healVal = rawElem[1].toInt() + rawElem[2].toInt();
+            healValues.push(healVal);
+        });
+
+        var toReturn = [];
+        toReturn.push(healValues, arrayFoodItems);
+
+        return toReturn;
+    }
+
+    function foodLogic(foodData)
+    {
+        var missingHp = $("#header_values_hp_bar").attr("data-max-value").toInt() - $("#header_values_hp_bar").attr("data-value").toInt();
+        var minPos = null;
+        var minVal = 99999;
+        foodData[0].forEach(function (item) {
+            var diff = item.toInt() - missingHp;
+            if(diff < minVal && diff > 0) {
+                minVal = diff;
+                minPos = foodData[0].indexOf(item);
+            }
+        });
+        return foodData[1][minPos];
+    }
+
+    function extractFoodData(selectedFood)
+    {
+        var xCoord = $(selectedFood).attr("data-position-x").toInt();
+        var yCoord = $(selectedFood).attr("data-position-x").toInt();
+        var sendable = {
+            from: 514,
+            fromX: xCoord,
+            fromY: yCoord,
+            to: 8,
+            toX: 1,
+            toY: 1,
+            amount: 1
+        };
+
+        return sendable;
+    }
+
+    function healMyself(dataToParam)
+    {
+        var requestUrl = "ajax.php?mod=inventory&submod=move";
+        var finalUrl = requestUrl + "&" + $.param(dataToParam);
+        var e = "";
+        e = e + "&a=" + new Date().getTime();
+        e = e + "&sh=" + secureHash;
+        $.ajax({
+            url: finalUrl,
+            type: 'POST',
+            data: e,
+            success: function (stuff) {
+                console.log("Worked");
+            }
+        });
     }
     //current page data
     var myLoc = location.toString();
@@ -61,6 +245,14 @@
     var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=0/));
     //training
     var pageTraining = Boolean(myLoc.match(/mod=training/));
+    //home
+    var pageHome = Boolean(myLoc.match(/mod=overview/));
+
+    var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
+
+    if(selfHp <= 15) {
+        startEatingIfFoodExists();
+    }
     // --REPEAT--
     setInterval(function() {
         if (pageTraining == true) {
@@ -69,99 +261,41 @@
             }).get();
             var upgradePlan = calcSkill(myGold, trainingCosts);
             GM_setValue("upgPlan", JSON.stringify(upgradePlan));
+            // PURGE PLAN
+            //GM_setValue("upgPlan", JSON.stringify([]));
             GM_setValue("upgCost", JSON.stringify(trainingCosts));
         } else {
             var trainingButton = $("a[href*='mod=training']")[0];
             trainingButton.click();
         }
-    }, 3600000);
+    }, 45000);
     setInterval(function() {
         // SKILL ADDING
         var upgrades = JSON.parse(GM_getValue("upgPlan"));
-        if(upgrades.length) {
-            if (pageTraining == true) {
-                var costs = JSON.parse(GM_getValue("upgCost"));
-                var upgradeToDo = upgrades[0];
-                upgrades.shift();
-                var selectedUpgrade = costs.indexOf(upgradeToDo) + 1;
-                var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
-                if(upgradeButton.length) {
-                    upgradeButton.click();
-                }
-                /* Old approach - Might be useful
-                upgrades.forEach(function (item) {
-                    var selectedUpgrade = costs.indexOf(item) + 1;
-                    upgrades.shift();
-                    var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]')[0];
-                    upgradeButton.click();
-                });
-                */
-            }  else {
-                var trainingButton = $("a[href*='mod=training']")[0];
-                trainingButton.click();
-            }
-        } else {
-            // console.log("u r broke man");
+        upgrades = upgrades.filter(function(item, i, ar){ return ar.indexOf(item) === i; });
+        //console.log(upgrades);
+        if(upgrades[0] > myGold) {
+            GM_setValue("upgPlan", JSON.stringify([]));
+            console.log("RESET UPGRADE PLAN");
         }
-        // ------------------
         //circus
         var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
         //arena
         var arenaLoad = document.getElementById("cooldown_bar_fill_arena").style.width;
         //expeditii
-        var elemStyle = document.getElementById("cooldown_bar_fill_expedition").style.width;
+        var expeditionsLoad = document.getElementById("cooldown_bar_fill_expedition").style.width;
         // dungeon
         var dungeonLoad = document.getElementById("cooldown_bar_fill_dungeon").style.width;
         // HP BAR
-        var lifeStyle = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
-        if (elemStyle == "100%" && lifeStyle > 15) {
-            if (pageExpeditii == true) {
-                attack(null, '2', 2, 1, '');
-            } else {
-                var redirectButton = $('a[href*="&loc=1"]')[0];
-                redirectButton.click();
-            }
-        }
-        if (dungeonLoad == "100%") {
-            if (pageDungeon == true) {
-                var inDungeon = $("img[src*='9186/img/dungeons/']").length;
-                if (inDungeon) {
-                    var attackDungeon = $("img[src='9186/img/combatloc.gif']")[0];
-                    attackDungeon.click();
-                } else {
-                    var clickDiff = $("input[value='Normal']")[0];
-                    clickDiff.click();
-                }
-                //var dungId = $("input[name='dungeonId']").val();
-            } else {
-                var clickDungeon = $("#cooldown_bar_dungeon>a")[0];
-                clickDungeon.click();
-            }
-        }
-        if(arenaLoad == "100%") {
-            if(pageArena == true) {
-                var testing = $(".attack:last").attr("onClick").toString();
-                var returnedArray = testing.match(/startFight\(this\,\s(.+?)\)/);
-                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], secureHash);
-            } else {
-                var clickArena = $("#cooldown_bar_arena>a")[0];
-                clickArena.click();
-            }
-        }
-        if(circusTurmaLoad == "100%") {
-            if(pageCircus == true) {
-                var users = document.getElementsByClassName("attack");
-                var seconds = new Date() / 1000;
-                seconds = seconds.toInt().toString();
-                seconds = seconds[seconds.length - 1] / 2;
-                seconds = seconds.toInt();
-                console.log(seconds);
-                users[seconds].click();
-            } else {
-                var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
-                clickCircusTurma.click();
-            }
-        }
+        var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
+
+        upgradeSkills(upgrades, pageTraining, myGold);
+
+        expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp);
+        dungeonAttack(dungeonLoad, pageDungeon, selfHp);
+        //ctAttack(circusTurmaLoad, pageCircus, selfHp);
+        //arenaAttack(arenaLoad, pageArena, selfHp)
+
         /*
         LEGACY VERSION - ATTACKS FIRST USER IN LIST
         if(circusTurmaLoad == "100%") {
