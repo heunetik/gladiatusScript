@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      8.5
+// @version      8.8
 // @description  Automatic Expeditions and Arena attacking script for the Romanian Gladiatus server
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -79,7 +79,7 @@
             if (pageExpeditii == true) {
                 var readyToAttack = $(".expedition_cooldown_reduce");
                 if(readyToAttack.length == 0) {
-                    attack(null, '2', 2, 1, '');
+                    attack(null, '2', 2, 0, '');
                 }
             } else {
                 var redirectButton = $('a[href*="&loc=1"]')[0];
@@ -111,7 +111,6 @@
                 seconds = seconds.toInt().toString();
                 seconds = seconds[seconds.length - 1] / 2;
                 seconds = seconds.toInt();
-                console.log(seconds);
                 users[seconds].click();
             } else {
                 var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
@@ -154,7 +153,7 @@
     {
         var checkExist = setInterval(function() {
            if ($("div[data-content-type='64']").length) {
-              healMyself(extractFoodData(foodLogic(getFoodList())));
+              moveItem(extractFoodData(foodLogic(getFoodList())));
               clearInterval(checkExist);
            }
         }, 300);
@@ -188,18 +187,22 @@
         var minVal = 99999;
         foodData[0].forEach(function (item) {
             var diff = item.toInt() - missingHp;
-            if(diff < minVal && diff > 0) {
+            if(diff < minVal && diff < 0) {
+                minVal = diff;
+                minPos = foodData[0].indexOf(item);
+            } else {
                 minVal = diff;
                 minPos = foodData[0].indexOf(item);
             }
         });
+
         return foodData[1][minPos];
     }
 
     function extractFoodData(selectedFood)
     {
         var xCoord = $(selectedFood).attr("data-position-x").toInt();
-        var yCoord = $(selectedFood).attr("data-position-x").toInt();
+        var yCoord = $(selectedFood).attr("data-position-y").toInt();
         var sendable = {
             from: 514,
             fromX: xCoord,
@@ -213,21 +216,49 @@
         return sendable;
     }
 
-    function healMyself(dataToParam)
+    function moveItem(dataToParam)
     {
         var requestUrl = "ajax.php?mod=inventory&submod=move";
-        var finalUrl = requestUrl + "&" + $.param(dataToParam);
+        var finalUrl = requestUrl + "&" + jQuery.param(dataToParam);
+        var resp = null;
         var e = "";
         e = e + "&a=" + new Date().getTime();
         e = e + "&sh=" + secureHash;
-        $.ajax({
+        jQuery.ajax({
             url: finalUrl,
             type: 'POST',
             data: e,
+            async: false,
             success: function (stuff) {
-                console.log("Worked");
+                resp = JSON.parse(stuff);
             }
         });
+        return resp;
+    }
+
+    function moveLootToInventory(itemId)
+    {
+        var success = 0;
+        var sendable = {
+            from: itemId,
+            fromX: 1,
+            fromY: 1,
+            to: 513,
+            toX: null,
+            toY: null,
+            amount: 1
+        };
+        
+        for(var y = 0; y < 6; y++) {
+            for(var x = 0; x < 9; x++) {
+                sendable.toX = x;
+                sendable.toY = y;
+                if(!moveItem(sendable).error) {
+                    success = 1;
+                }
+            }
+        }
+        return success;
     }
     //current page data
     var myLoc = location.toString();
@@ -251,7 +282,12 @@
     var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
 
     if(selfHp <= 15) {
-        startEatingIfFoodExists();
+        if (pageHome == true) {
+            startEatingIfFoodExists();
+        } else {
+            var homeButton = $("a[href*='mod=overview']")[0];
+            homeButton.click();
+        }
     }
     // --REPEAT--
     setInterval(function() {
@@ -273,7 +309,6 @@
         // SKILL ADDING
         var upgrades = JSON.parse(GM_getValue("upgPlan"));
         upgrades = upgrades.filter(function(item, i, ar){ return ar.indexOf(item) === i; });
-        //console.log(upgrades);
         if(upgrades[0] > myGold) {
             GM_setValue("upgPlan", JSON.stringify([]));
             console.log("RESET UPGRADE PLAN");
