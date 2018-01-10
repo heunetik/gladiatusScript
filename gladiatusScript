@@ -11,19 +11,21 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // ==/UserScript==
-
 (function() {
     'use strict';
 
     function addGlobalStyle(css) {
         var head, style;
         head = document.getElementsByTagName('head')[0];
-        if (!head) { return; }
+        if (!head) {
+            return;
+        }
         style = document.createElement('style');
         style.type = 'text/css';
         style.innerHTML = css.replace(/;/g, ' !important;');
         head.appendChild(style);
     }
+    var train = false;
 
     function calcSkill(gold, skillCost) {
         var skills = [],
@@ -36,7 +38,7 @@
         });
         return skills;
     }
-
+    //document.getElementById("market_item_table").rows[1].cells[4].innerHTML;
     function attackMethod(method, url, data, shash) {
         var request = {
             method: method,
@@ -49,20 +51,19 @@
         new Request(request).send();
     }
 
-    function dungeonAttack(dungeonLoad, pageDungeon, selfHp)
-    {
-        if (dungeonLoad == "100%" && selfHp > 15) {
+    function dungeonAttack(dungeonLoad, pageDungeon, selfHp) {
+        if (dungeonLoad == "100%") {
             if (pageDungeon == true) {
-                var inDungeon = $("img[src*='9186/img/dungeons/']").length;
+                var inDungeon = $("img[src*='9194/img/dungeons/']").length;
                 if (inDungeon) {
-                    var attackDungeon = $("img[src='9186/img/combatloc.gif']");
-                    if(attackDungeon.length) {
+                    var attackDungeon = $("img[src='9194/img/combatloc.gif']");
+                    if (attackDungeon.length) {
                         attackDungeon[0].click();
                     } else {
                         location.reload();
                     }
                 } else {
-                    var clickDiff = $("input[value='Normal']")[0];
+                    var clickDiff = $("input[value='Avansat']")[0];
                     clickDiff.click();
                 }
                 //var dungId = $("input[name='dungeonId']").val();
@@ -73,28 +74,30 @@
         }
     }
 
-    function expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp)
-    {
+    function expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp) {
         if (expeditionsLoad == "100%" && selfHp > 15) {
             if (pageExpeditii == true) {
                 var readyToAttack = $(".expedition_cooldown_reduce");
-                if(readyToAttack.length == 0) {
-                    attack(null, '2', 2, 0, '');
+                if (readyToAttack.length == 0) {
+                    attack(null, '5', 4, 0, '');
+                    location.reload();
                 }
             } else {
-                var redirectButton = $('a[href*="&loc=1"]')[0];
+                var redirectButton = $('a[href*="&loc=5"]')[0];
                 redirectButton.click();
             }
         }
     }
 
-    function arenaAttack(arenaLoad, pageArena, selfHp)
-    {
-        if(arenaLoad == "100%" && selfHp > 15) {
-            if(pageArena == true) {
-                var pickedEnemy = $(".attack:last").attr("onClick").toString();
-                var returnedArray = pickedEnemy.match(/startFight\(this\,\s(.+?)\)/);
-                attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], secureHash);
+    function arenaAttack(arenaLoad, pageArena, selfHp) {
+        if (arenaLoad == "100%" && selfHp > 80) {
+            if (pageArena == true) {
+                var users = document.getElementsByClassName("attack");
+                var seconds = new Date() / 1000;
+                seconds = seconds.toInt().toString();
+                seconds = seconds[seconds.length - 1] / 2;
+                seconds = seconds.toInt();
+                users[seconds].click();
             } else {
                 var clickArena = $("#cooldown_bar_arena>a")[0];
                 clickArena.click();
@@ -102,10 +105,9 @@
         }
     }
 
-    function ctAttack(circusTurmaLoad, pageCircus, selfHp)
-    {
-        if(circusTurmaLoad == "100%") {
-            if(pageCircus == true) {
+    function ctAttack(circusTurmaLoad, pageCircus) {
+        if (circusTurmaLoad == "100%") {
+            if (pageCircus == true) {
                 var users = document.getElementsByClassName("attack");
                 var seconds = new Date() / 1000;
                 seconds = seconds.toInt().toString();
@@ -119,16 +121,15 @@
         }
     }
 
-    function upgradeSkills(upgrades, pageTraining, myGold)
-    {
-        if(Boolean(upgrades.length)) {
+    function upgradeSkills(upgrades, pageTraining, myGold) {
+        if (Boolean(upgrades.length)) {
             if (pageTraining == true) {
                 var costs = JSON.parse(GM_getValue("upgCost"));
                 var upgradeToDo = upgrades[0];
                 upgrades.shift();
                 var selectedUpgrade = costs.indexOf(upgradeToDo) + 1;
                 var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]');
-                if(upgradeButton.length) {
+                if (upgradeButton.length) {
                     upgradeButton[0].click();
                     //location.reload();
                 }
@@ -140,7 +141,7 @@
                     upgradeButton.click();
                 });
                 */
-            }  else {
+            } else {
                 var trainingButton = $("a[href*='mod=training']");
                 trainingButton[0].click();
             }
@@ -149,26 +150,23 @@
         }
     }
 
-    function startEatingIfFoodExists()
-    {
+    function startEatingIfFoodExists() {
         var checkExist = setInterval(function() {
-           if ($("div[data-content-type='64']").length) {
-              moveItem(extractFoodData(foodLogic(getFoodList())));
-              clearInterval(checkExist);
-           }
+            if ($("div[data-content-type='64']").length) {
+                moveItem(extractFoodData(foodLogic(getFoodList())));
+                clearInterval(checkExist);
+            }
         }, 300);
     }
 
-    function getFoodList()
-    {
+    function getFoodList() {
         var allFoodItems = $("div[data-content-type='64']");
 
         var arrayFoodItems = $.map(allFoodItems, function(value, index) {
             return [value];
         });
-
         var healValues = [];
-        arrayFoodItems.forEach(function (item) {
+        arrayFoodItems.forEach(function(item) {
             var rawElem = $(item).attr("data-tooltip").match(/Vindeca\s(.+?)\sdin.+inteligenta\:\s\+(.+?)\s/);
             var healVal = rawElem[1].toInt() + rawElem[2].toInt();
             healValues.push(healVal);
@@ -180,14 +178,13 @@
         return toReturn;
     }
 
-    function foodLogic(foodData)
-    {
+    function foodLogic(foodData) {
         var missingHp = $("#header_values_hp_bar").attr("data-max-value").toInt() - $("#header_values_hp_bar").attr("data-value").toInt();
         var minPos = null;
         var minVal = 99999;
-        foodData[0].forEach(function (item) {
+        foodData[0].forEach(function(item) {
             var diff = item.toInt() - missingHp;
-            if(diff < minVal && diff < 0) {
+            if (diff < minVal && diff < 0) {
                 minVal = diff;
                 minPos = foodData[0].indexOf(item);
             } else {
@@ -195,16 +192,14 @@
                 minPos = foodData[0].indexOf(item);
             }
         });
-
         return foodData[1][minPos];
     }
 
-    function extractFoodData(selectedFood)
-    {
+    function extractFoodData(selectedFood) {
         var xCoord = $(selectedFood).attr("data-position-x").toInt();
         var yCoord = $(selectedFood).attr("data-position-y").toInt();
         var sendable = {
-            from: 514,
+            from: 517,
             fromX: xCoord,
             fromY: yCoord,
             to: 8,
@@ -216,8 +211,7 @@
         return sendable;
     }
 
-    function moveItem(dataToParam)
-    {
+    function moveItem(dataToParam) {
         var requestUrl = "ajax.php?mod=inventory&submod=move";
         var finalUrl = requestUrl + "&" + jQuery.param(dataToParam);
         var resp = null;
@@ -229,59 +223,159 @@
             type: 'POST',
             data: e,
             async: false,
-            success: function (stuff) {
+            success: function(stuff) {
                 resp = JSON.parse(stuff);
             }
         });
         return resp;
     }
+    GM_setValue("move", JSON.stringify(false));
+    GM_setValue("toX", JSON.stringify(null));
+    GM_setValue("toY", JSON.stringify(null));
 
-    function moveLootToInventory(itemId)
-    {
-        var success = 0;
+    function moveLootToInventory(item) {
         var sendable = {
-            from: itemId,
+            from: item[0],
             fromX: 1,
             fromY: 1,
-            to: 513,
-            toX: null,
-            toY: null,
-            amount: 1
+            to: 517,
+            toX: JSON.parse(GM_getValue("toX", null)),
+            toY: JSON.parse(GM_getValue("toY", null)),
+            amount: item[1]
         };
-        
-        for(var y = 0; y < 6; y++) {
-            for(var x = 0; x < 9; x++) {
-                sendable.toX = x;
-                sendable.toY = y;
-                if(!moveItem(sendable).error) {
-                    success = 1;
+
+        var move = JSON.parse(GM_getValue("move", false));
+        getBlocksInv(517, pagePackages);
+        var inv = JSON.parse(GM_getValue("inventar"));
+        console.log(move, 'out');
+        toMove:
+            if (move == true) {
+                console.log(sendable);
+                console.log("im true!", 'stop');
+                if (!moveItem(sendable).error) {
+                    getBlocksInv(517, pagePackages);
+                    GM_setValue("move", JSON.stringify(false));
+                    console.log(move);
+                    location.reload();
+                }
+            } else {
+                for (var y = 1; y <= 5; y++) {
+                    for (var x = 1; x <= 8; x++) {
+                        if (inv[y][x] === true && y + item['y'][1] <= 6 && x + item['x'][1] <= 9) {
+                            console.log(inv[y][x] === true, y, x, 'start');
+                            checkItem:
+                                for (var itemY = y; itemY < y + item['y'][1]; itemY++) {
+
+                                    for (var itemX = x; itemX < x + item['x'][1]; itemX++) {
+                                        console.log(itemY, "y");
+                                        console.log(itemX, 'x');
+                                        console.log(inv[itemY][itemX]);
+                                        if (inv[itemY][itemX] === true) {
+                                            move = true;
+
+                                        } else {
+                                            move = false;
+                                            GM_setValue("move", JSON.stringify(move));
+                                            break checkItem;
+                                        }
+                                    }
+                                }
+                            if (move == true) {
+                                GM_setValue("move", JSON.stringify(move));
+                                GM_setValue("toX", JSON.stringify(x));
+                                GM_setValue("toY", JSON.stringify(y));
+                                console.log(move);
+                                break toMove;
+
+                            }
+                        }
+                    }
                 }
             }
-        }
-        return success;
     }
+
+    function setArrayBlock(item, invArray) {
+        for (var x = item.getAttribute("data-position-x").toInt(); x < item.getAttribute("data-position-x").toInt() + item.getAttribute("data-measurement-x").toInt(); x++) {
+            for (var y = item.getAttribute("data-position-y").toInt(); y < item.getAttribute("data-position-y").toInt() + item.getAttribute("data-measurement-y").toInt(); y++) {
+                invArray[y][x] = false;
+            }
+        }
+        return invArray;
+    }
+
+    function getBlocksInv(invId, pagePackages) {
+        var packagesButtone = $("a#menue_packages");
+        if (pagePackages == true) {
+            var button = $("a[data-bag-number='" + invId + "']");
+            button.click();
+            var items = $("div[data-container-number='" + invId + "']");
+            var invMatrix = [];
+            invMatrix[invId] = [];
+            for (var y = 1; y < 6; y++) {
+                invMatrix[invId][y] = [];
+                for (var x = 1; x < 9; x++) {
+                    invMatrix[invId][y][x] = true;
+                }
+            }
+            for (var i = 0; i < items.length; i++) {
+                invMatrix[invId] = setArrayBlock(items[i], invMatrix[invId]);
+            }
+            GM_setValue("inventar", JSON.stringify(invMatrix[invId]));
+        } else {
+            packagesButtone[0].click();
+        }
+    }
+
+    function getIdOfItems(resp) {
+        var packagesButtone = $("a#menue_packages");
+        if (resp == true) {
+            var pakageItem = $("div[data-no-combine='true']").length;
+            console.log(pakageItem);
+            return;
+            var item = [];
+            item[0] = pakageItem.getAttribute("data-container-number").toInt();
+            var child = pakageItem.children[0];
+            item[1] = child.getAttribute("data-amount").toInt();
+            item['y'] = [];
+            item['x'] = [];
+            item['y'][0] = child.getAttribute("data-position-y").toInt();
+            item['x'][0] = child.getAttribute("data-position-x").toInt();
+            item['y'][1] = child.getAttribute("data-measurement-y").toInt();
+            item['x'][1] = child.getAttribute("data-measurement-x").toInt();
+            moveLootToInventory(item);
+        } else {
+            packagesButtone[0].click();
+        }
+    }
+
     //current page data
     var myLoc = location.toString();
     var fullLoc = location.origin.toString() + location.pathname.toString();
     // ------------------
     //current gold ammount
-    var myGold = $("#sstat_gold_val").text().trim().replace('.','').toInt();
+    var myGold = $("#sstat_gold_val").text().trim().replace('.', '').toInt();
+    //page packages
+    var pagePackages = Boolean(myLoc.match(/mod=packages/));
+
     //circus
     var pageCircus = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=3/));
     //arena
-    var pageArena = Boolean(myLoc.match(/.+index\.php\?(mod\=arena)\&sh\=.+$/));
+    var pageArena = Boolean(myLoc.match(/mod=arena&submod=serverArena&aType=2/));
     //expeditii
     var pageExpeditii = Boolean(myLoc.match(/mod=location&loc=/));
     //dungeon
-    var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=0/));
+    var pageDungeon = Boolean(myLoc.match(/mod=dungeon&loc=/));
     //training
     var pageTraining = Boolean(myLoc.match(/mod=training/));
     //home
     var pageHome = Boolean(myLoc.match(/mod=overview/));
 
+
+    //getIdOfItems(pagePackages);
+
     var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
 
-    if(selfHp <= 15) {
+    if (selfHp <= 15) {
         if (pageHome == true) {
             startEatingIfFoodExists();
         } else {
@@ -289,30 +383,37 @@
             homeButton.click();
         }
     }
-    // --REPEAT--
+    if (train) {
+        // --REPEAT--
+        setInterval(function() {
+            if (pageTraining == true) {
+                var trainingCosts = $(".training_costs").map(function() {
+                    return $(this).text().replace('.', '');
+                }).get();
+                trainingCosts.splice(6, 1);
+                var trainingCostsToInt = [];
+                for (var i = 0, len = trainingCosts.length; i < len; ++i) {
+                    trainingCostsToInt[i] = trainingCosts[i].replace('.', '').toInt();
+                    if (i == 3 || i == 0) {
+                        trainingCostsToInt.splice(i, 1);
+                    }
+                }
+                var upgradePlan = calcSkill(myGold, trainingCostsToInt);
+                GM_setValue("upgPlan", JSON.stringify(upgradePlan));
+                // PURGE PLAN
+                //GM_setValue("upgPlan", JSON.stringify([]));
+                GM_setValue("upgCost", JSON.stringify(trainingCostsToInt));
+            } else {
+                var trainingButton = $("a[href*='mod=training']")[0];
+                trainingButton.click();
+            }
+        }, 2000);
+    }
+
     setInterval(function() {
-        if (pageTraining == true) {
-            var trainingCosts = $(".training_costs").map(function() {
-                return $(this).text().trim().replace('.','').toInt();
-            }).get();
-            var upgradePlan = calcSkill(myGold, trainingCosts);
-            GM_setValue("upgPlan", JSON.stringify(upgradePlan));
-            // PURGE PLAN
-            //GM_setValue("upgPlan", JSON.stringify([]));
-            GM_setValue("upgCost", JSON.stringify(trainingCosts));
-        } else {
-            var trainingButton = $("a[href*='mod=training']")[0];
-            trainingButton.click();
-        }
-    }, 45000);
-    setInterval(function() {
-        // SKILL ADDING
-        var upgrades = JSON.parse(GM_getValue("upgPlan"));
-        upgrades = upgrades.filter(function(item, i, ar){ return ar.indexOf(item) === i; });
-        if(upgrades[0] > myGold) {
-            GM_setValue("upgPlan", JSON.stringify([]));
-            console.log("RESET UPGRADE PLAN");
-        }
+
+
+
         //circus
         var circusTurmaLoad = document.getElementById("cooldown_bar_fill_ct").style.width;
         //arena
@@ -324,13 +425,23 @@
         // HP BAR
         var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
 
-        upgradeSkills(upgrades, pageTraining, myGold);
-
-        expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp);
-        dungeonAttack(dungeonLoad, pageDungeon, selfHp);
-        //ctAttack(circusTurmaLoad, pageCircus, selfHp);
-        //arenaAttack(arenaLoad, pageArena, selfHp)
-
+        if (train) {
+             // SKILL ADDING
+        var upgrades = JSON.parse(GM_getValue("upgPlan"));
+        upgrades = upgrades.filter(function(item, i, ar) {
+            return ar.indexOf(item) === i;
+        });
+        if (upgrades[0] > myGold) {
+            GM_setValue("upgPlan", JSON.stringify([]));
+            console.log("RESET UPGRADE PLAN");
+        }
+            upgradeSkills(upgrades, pageTraining, myGold);
+        }
+        //expeditionsAttack(expeditionsLoad, pageExpeditii, selfHp);
+        //dungeonAttack(dungeonLoad, pageDungeon);
+        //ctAttack(circusTurmaLoad, pageCircus);
+        //arenaAttack(arenaLoad, pageArena, selfHp);
+        setInterval(function() {getIdOfItems(pagePackages);},1000);
         /*
         LEGACY VERSION - ATTACKS FIRST USER IN LIST
         if(circusTurmaLoad == "100%") {
