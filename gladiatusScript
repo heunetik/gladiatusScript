@@ -214,7 +214,7 @@ const settings = {
 
     var selfHp = document.getElementById("header_values_hp_bar_fill").style.width.toInt();
 
-    if (selfHp <= 15) {
+    if (selfHp <= settings.minHp) {
         if (homepage == true) {
             startEatingIfFoodExists();
         } else {
