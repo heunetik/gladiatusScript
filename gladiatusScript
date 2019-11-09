@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gladiatus Multiscript
 // @namespace    pondfillers
-// @version      9.0
+// @version      9.1
 // @description  Automatic Expeditions and Arena attacking script for Gladiatus
 // @author       heunetik
 // @match        https://*.gladiatus.gameforge.com/*
@@ -21,7 +21,8 @@ const settings = {
     circusTurmaAttack: false,
     arenaAttack: false,
     mobGroupPosition: "1",
-    mobPosition: 1
+    mobPosition: 1,
+    dungeonDifficulty: "dif1"
 };
 
 (function () {
@@ -53,32 +54,32 @@ const settings = {
 
     function dungeonAttack(dungeonPage) {
         if (dungeonPage == true) {
-            var inDungeon = $("img[src*='" + settings.dungeonVersion + "/img/dungeons/']").length;
+            var inDungeon = document.querySelectorAll("img[src*='" + settings.dungeonVersion + "/img/dungeons/']").length;
             if (inDungeon) {
-                var attackDungeon = $("img[src='" + settings.dungeonVersion + "/img/combatloc.gif']");
+                var attackDungeon = document.querySelectorAll("img[src='" + settings.dungeonVersion + "/img/combatloc.gif']");
                 if (attackDungeon.length) {
                     attackDungeon[0].click();
                 } else {
                     location.reload();
                 }
             } else {
-                var clickDiff = $("input[value='Normal']")[0];
+                var clickDiff = document.getElementsByName(settings.dungeonDifficulty)[0];
                 clickDiff.click();
             }
         } else {
-            var clickDungeon = $("#cooldown_bar_dungeon>a")[0];
+            var clickDungeon = document.getElementById("cooldown_bar_dungeon").getElementsByClassName("cooldown_bar_link")[0];;
             clickDungeon.click();
         }
     }
 
     function expeditionsAttack(expeditionsPage) {
         if (expeditionsPage == true) {
-            var readyToAttack = $(".expedition_cooldown_reduce");
+            var readyToAttack = document.querySelectorAll(".expedition_cooldown_reduce");
             if (readyToAttack.length == 0) {
                 attack(null, settings.mobGroupPosition, settings.mobPosition, 0, '');
             }
         } else {
-            var redirectButton = $('a[href*="&loc=1"]')[0];
+            var redirectButton = document.querySelectorAll('a[href*="&loc=1"]')[0];
             redirectButton.click();
         }
     }
@@ -89,7 +90,7 @@ const settings = {
             var returnedArray = pickedEnemy.match(/startFight\(this\,\s(.+?)\)/);
             attackMethod("get", "ajax/doArenaFight.php", "did=" + returnedArray[1], secureHash);
         } else {
-            var clickArena = $("#cooldown_bar_arena>a")[0];
+            var clickArena = document.querySelectorAll("#cooldown_bar_arena>a")[0];
             clickArena.click();
         }
     }
@@ -103,7 +104,7 @@ const settings = {
             seconds = seconds.toInt();
             users[seconds].click();
         } else {
-            var clickCircusTurma = $("#cooldown_bar_ct>a")[0];
+            var clickCircusTurma = document.querySelectorAll("#cooldown_bar_ct>a")[0];
             clickCircusTurma.click();
         }
     }
@@ -115,12 +116,12 @@ const settings = {
                 var upgradeToDo = upgrades[0];
                 upgrades.shift();
                 var selectedUpgrade = costs.indexOf(upgradeToDo) + 1;
-                var upgradeButton = $('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]');
+                var upgradeButton = document.querySelectorAll('a[href*="?mod=training&submod=train&skillToTrain=' + selectedUpgrade + '"]');
                 if (upgradeButton.length) {
                     upgradeButton[0].click();
                 }
             } else {
-                var trainingButton = $("a[href*='mod=training']");
+                var trainingButton = document.querySelectorAll("a[href*='mod=training']");
                 trainingButton[0].click();
             }
         }
@@ -128,7 +129,7 @@ const settings = {
 
     function startEatingIfFoodExists() {
         var checkExist = setInterval(function () {
-            if ($("div[data-content-type='64']").length) {
+            if (document.querySelectorAll("div[data-content-type='64']").length) {
                 moveItem(extractFoodData(foodLogic(getFoodList())));
                 clearInterval(checkExist);
             }
@@ -136,8 +137,7 @@ const settings = {
     }
 
     function getFoodList() {
-        var allFoodItems = $("div[data-content-type='64']");
-
+        var allFoodItems = document.querySelectorAll("div[data-content-type='64']");
         var arrayFoodItems = $.map(allFoodItems, function (value, index) {
             return [value];
         });
@@ -218,7 +218,7 @@ const settings = {
         if (homepage == true) {
             startEatingIfFoodExists();
         } else {
-            var homeButton = $("a[href*='mod=overview']")[0];
+            var homeButton = document.querySelectorAll("a[href*='mod=overview']")[0];
             homeButton.click();
         }
     }
@@ -232,7 +232,7 @@ const settings = {
             GM_setValue("upgPlan", JSON.stringify(upgradePlan));
             GM_setValue("upgCost", JSON.stringify(trainingCosts));
         } else {
-            var trainingButton = $("a[href*='mod=training']")[0];
+            var trainingButton = document.querySelectorAll("a[href*='mod=training']")[0];
             trainingButton.click();
         }
     }, 45000);

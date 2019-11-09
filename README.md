@@ -7,12 +7,13 @@ A Tampermonkey script for Gladiatus automatization
 - Since the dungeons' version keeps getting updated, I've added an easy way to keep it up to date. If the script keeps refreshing on the dungeon page, it means that there was an update. All you have to do is to `right click -> inspect element` on the dungeon map, and copy the numbers from the `src` tag. e.g.: `src="9357/img/spacer.gif"` means that the `dungeonVersion` should be set to `9357`.
 + All other configuration is also done by hand, by modifying the same settings variable:
   + dungeonVersion - Set the current dungeon version
-  + minHp - The HP limit - Above the limit you attack, under the limit you try to heal, if you have any available food (`1 - 100`)
+  + minHp - The HP limit - Above the limit you attack, under the limit you try to heal, if you have any available food (`"1" - "100"`)
   + upgradeSkills - toggle automatic upgrading (`true / false`),
   + expeditionsAttack - toggle automatic attack(`true / false`)
   + dungeonAttack - toggle automatic attack (`true / false`)
   + circusTurmaAttack - toggle automatic attack (`true / false`)
   + arenaAttack - toggle automatic attack (`true / false`)
+  + dungeonDifficulty - which dungeon difficulty will be selected (normal/hard) (`"dif1" / "dif2"`)
   + mobGroupPosition & mobPosition: see attached photo
 
 ---
